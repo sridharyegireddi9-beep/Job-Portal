@@ -108,11 +108,25 @@ exports.deleteJob = async (req, res) => {
 const User = require("../models/User");
 exports.tempFixDb = async (req, res) => {
   try {
-    const recruiter = await User.findOne({ role: "recruiter" });
-    if (!recruiter) {
+    const recruiters = await User.find({ role: "recruiter" });
+    if (recruiters.length === 0) {
       return res.status(400).json({
-        message: "No recruiter found in the database. Please register a recruiter account first!",
+        message: "No recruiter accounts found in the database. Please register a recruiter account first!",
       });
+    }
+
+    const { email } = req.query;
+    let recruiter;
+    if (email) {
+      recruiter = recruiters.find(r => r.email === email);
+      if (!recruiter) {
+        return res.status(400).json({
+          message: `No recruiter found with email: ${email}`,
+          availableRecruiters: recruiters.map(r => r.email),
+        });
+      }
+    } else {
+      recruiter = recruiters[0];
     }
 
     const result = await Job.updateMany(
@@ -129,6 +143,7 @@ exports.tempFixDb = async (req, res) => {
       },
       matchedCount: result.matchedCount,
       modifiedCount: result.modifiedCount,
+      availableRecruiters: recruiters.map(r => r.email),
     });
   } catch (error) {
     res.status(500).json({
