@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/Authcontext";
-import { api } from "../services/api";
+import { BASE_URL } from "../services/api";
 import { Briefcase, Calendar, CheckSquare, Clock, AlertCircle, FileText, ArrowRight, User } from "lucide-react";
 
 const Userdashboard = () => {
@@ -16,7 +16,14 @@ const Userdashboard = () => {
       setLoading(true);
       setError("");
       try {
-        const data = await api.applications.getAll();
+        const token = localStorage.getItem("token");
+        const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+        const response = await fetch(`${BASE_URL}/applications`, { headers });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to load applications");
+        }
         setApplications(data);
       } catch (err) {
         setError(err.message || "Failed to load applications");

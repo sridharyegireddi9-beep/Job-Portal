@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../services/api";
+import { BASE_URL, BACKEND_URL } from "../services/api";
 import { Briefcase, FileText, Send, UserCheck, Trash2, Edit3, Calendar, MapPin, DollarSign, PlusCircle, CheckCircle, Check, X, AlertCircle } from "lucide-react";
 
 const Recruiterdashboard = () => {
@@ -23,16 +23,22 @@ const Recruiterdashboard = () => {
     setLoading(true);
     setError("");
     try {
-      // 1. Fetch applications
-      const appsData = await api.applications.getAll();
+      const token = localStorage.getItem("token");
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+      const appsRes = await fetch(`${BASE_URL}/applications`, { headers });
+      const appsData = await appsRes.json();
+      if (!appsRes.ok) {
+        throw new Error(appsData.message || "Failed to load applications");
+      }
       setApplications(appsData);
 
-      // 2. Fetch jobs
-      const allJobs = await api.jobs.getAll();
-      // Filter jobs created by this recruiter on the client,
-      // or since jobs list contains populated recruiter info, we can check.
-      // But wait! On creation we save req.user.id. So let's match recruiter ID.
-      // Wait, let's look up our user details from localStorage.
+      const jobsRes = await fetch(`${BASE_URL}/jobs`, { headers });
+      const allJobs = await jobsRes.json();
+      if (!jobsRes.ok) {
+        throw new Error(allJobs.message || "Failed to load jobs");
+      }
+
       const cachedUser = JSON.parse(localStorage.getItem("user"));
       const recruiterId = cachedUser?._id;
 
@@ -64,13 +70,28 @@ const Recruiterdashboard = () => {
 
     setSubmittingJob(true);
     try {
-      await api.jobs.create({
-        title,
-        company,
-        location,
-        salary: Number(salary),
-        description,
+      const token = localStorage.getItem("token");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${BASE_URL}/jobs`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          title,
+          company,
+          location,
+          salary: Number(salary),
+          description,
+        }),
       });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to post job");
+      }
 
       setSuccess("Job listing created successfully!");
       // Reset form
@@ -96,7 +117,17 @@ const Recruiterdashboard = () => {
   const handleDeleteJob = async (jobId) => {
     if (!window.confirm("Are you sure you want to delete this job listing?")) return;
     try {
-      await api.jobs.delete(jobId);
+      const token = localStorage.getItem("token");
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+      const response = await fetch(`${BASE_URL}/jobs/${jobId}`, {
+        method: "DELETE",
+        headers,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete job");
+      }
       setSuccess("Job listing deleted successfully!");
       fetchData();
       setTimeout(() => setSuccess(""), 3000);
@@ -107,7 +138,22 @@ const Recruiterdashboard = () => {
 
   const handleStatusChange = async (appId, newStatus) => {
     try {
-      await api.applications.updateStatus(appId, newStatus);
+      const token = localStorage.getItem("token");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${BASE_URL}/applications/${appId}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update status");
+      }
       setSuccess(`Application marked as ${newStatus}`);
       fetchData();
       setTimeout(() => setSuccess(""), 3000);
@@ -366,7 +412,7 @@ const Recruiterdashboard = () => {
                           <td>
                             {app.resume ? (
                               <a
-                                href={`http://localhost:5000${app.resume}`}
+                                href={`${BACKEND_URL}${app.resume}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 style={styles.downloadLink}

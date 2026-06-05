@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/Authcontext";
-import { api } from "../services/api";
+import { BASE_URL } from "../services/api";
 import { Search, MapPin, TrendingUp, Users, Building, CheckCircle, ArrowRight, Code, Paintbrush, Megaphone, Laptop } from "lucide-react";
 
 const Home = () => {
@@ -15,7 +15,11 @@ const Home = () => {
   useEffect(() => {
     const fetchRecentJobs = async () => {
       try {
-        const jobs = await api.jobs.getAll();
+        const response = await fetch(`${BASE_URL}/jobs`);
+        const jobs = await response.json();
+        if (!response.ok) {
+          throw new Error(jobs.message || "Failed to load featured jobs");
+        }
         // Display only the first 3 jobs as featured
         setFeaturedJobs(jobs.slice(0, 3));
       } catch (err) {

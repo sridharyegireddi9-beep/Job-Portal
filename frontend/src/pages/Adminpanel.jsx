@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../services/api";
+import { BASE_URL } from "../services/api";
 import { Users, Briefcase, Trash2, ShieldCheck, Mail, ShieldAlert, Award } from "lucide-react";
 
 const Adminpanel = () => {
@@ -15,10 +15,21 @@ const Adminpanel = () => {
     setLoading(true);
     setError("");
     try {
-      const usersData = await api.admin.getUsers();
+      const token = localStorage.getItem("token");
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+      const usersRes = await fetch(`${BASE_URL}/admin/users`, { headers });
+      const usersData = await usersRes.json();
+      if (!usersRes.ok) {
+        throw new Error(usersData.message || "Failed to load administrative users");
+      }
       setUsers(usersData);
       
-      const jobsData = await api.jobs.getAll();
+      const jobsRes = await fetch(`${BASE_URL}/jobs`, { headers });
+      const jobsData = await jobsRes.json();
+      if (!jobsRes.ok) {
+        throw new Error(jobsData.message || "Failed to load jobs");
+      }
       setJobs(jobsData);
     } catch (err) {
       setError(err.message || "Failed to load administrative details");
@@ -34,7 +45,18 @@ const Adminpanel = () => {
   const handleDeleteUser = async (userId) => {
     if (!window.confirm("Are you sure you want to delete this user? All applications will be orphaned.")) return;
     try {
-      await api.admin.deleteUser(userId);
+      const token = localStorage.getItem("token");
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+      const response = await fetch(`${BASE_URL}/admin/user/${userId}`, {
+        method: "DELETE",
+        headers,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete user");
+      }
+
       setSuccess("User account deleted successfully");
       fetchData();
       setTimeout(() => setSuccess(""), 3000);
@@ -46,7 +68,18 @@ const Adminpanel = () => {
   const handleDeleteJob = async (jobId) => {
     if (!window.confirm("Are you sure you want to delete this job listing?")) return;
     try {
-      await api.admin.deleteJob(jobId);
+      const token = localStorage.getItem("token");
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+      const response = await fetch(`${BASE_URL}/admin/job/${jobId}`, {
+        method: "DELETE",
+        headers,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete job");
+      }
+
       setSuccess("Job listing deleted successfully");
       fetchData();
       setTimeout(() => setSuccess(""), 3000);

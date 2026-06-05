@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
-import { api } from "../services/api";
+import { BASE_URL } from "../services/api";
 
 const AuthContext = createContext(null);
 
@@ -27,7 +27,17 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     setLoading(true);
     try {
-      const res = await api.auth.login(email, password);
+      const response = await fetch(`${BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      const res = await response.json();
+      if (!response.ok) {
+        throw new Error(res.message || "Something went wrong");
+      }
       localStorage.setItem("token", res.token);
       localStorage.setItem("user", JSON.stringify(res.user));
       setToken(res.token);
@@ -43,7 +53,17 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password, role) => {
     setLoading(true);
     try {
-      const res = await api.auth.register(name, email, password, role);
+      const response = await fetch(`${BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password, role }),
+      });
+      const res = await response.json();
+      if (!response.ok) {
+        throw new Error(res.message || "Something went wrong");
+      }
       localStorage.setItem("token", res.token);
       localStorage.setItem("user", JSON.stringify(res.user));
       setToken(res.token);
@@ -65,7 +85,19 @@ export const AuthProvider = ({ children }) => {
 
   const updateUserProfile = async (formData) => {
     try {
-      const res = await api.auth.updateProfile(formData);
+      const headers = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${BASE_URL}/auth/profile`, {
+        method: "PUT",
+        headers,
+        body: formData,
+      });
+      const res = await response.json();
+      if (!response.ok) {
+        throw new Error(res.message || "Something went wrong");
+      }
       localStorage.setItem("user", JSON.stringify(res.user));
       setUser(res.user);
       return res.user;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/Authcontext";
-import { api } from "../services/api";
+import { BASE_URL, BACKEND_URL } from "../services/api";
 import { MapPin, DollarSign, Calendar, FileText, CheckCircle, ArrowLeft, Info, FileCheck, Check, X, ShieldAlert } from "lucide-react";
 
 const Jobdetails = () => {
@@ -23,20 +23,34 @@ const Jobdetails = () => {
     setLoading(true);
     setError("");
     try {
-      const jobData = await api.jobs.getById(id);
+      const token = localStorage.getItem("token");
+      const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+      const jobRes = await fetch(`${BASE_URL}/jobs/${id}`);
+      const jobData = await jobRes.json();
+      if (!jobRes.ok) {
+        throw new Error(jobData.message || "Failed to load job details");
+      }
       setJob(jobData);
       
       // If user is candidate, verify if they already applied
       if (user && user.role === "user") {
-        const userApps = await api.applications.getAll();
-        const applied = userApps.some((app) => app.job._id === id);
-        setAlreadyApplied(applied);
+        const appsRes = await fetch(`${BASE_URL}/applications`, { headers });
+        const userApps = await appsRes.json();
+        if (appsRes.ok) {
+          const applied = userApps.some((app) => app.job._id === id);
+          setAlreadyApplied(applied);
+        }
       }
       
       // If user is the recruiter of this job, get the applicants
       if (user && (user.role === "admin" || (user.role === "recruiter" && (jobData.recruiter?._id || jobData.recruiter) === user._id))) {
         setLoadingApplicants(true);
-        const allApps = await api.applications.getAll();
+        const allAppsRes = await fetch(`${BASE_URL}/applications`, { headers });
+        const allApps = await allAppsRes.json();
+        if (!allAppsRes.ok) {
+          throw new Error(allApps.message || "Failed to load applications");
+        }
         const matchingApps = allApps.filter((app) => app.job._id === id);
         setApplicants(matchingApps);
         setLoadingApplicants(false);
@@ -65,7 +79,23 @@ const Jobdetails = () => {
 
     setError("");
     try {
-      await api.applications.apply(id);
+      const token = localStorage.getItem("token");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${BASE_URL}/applications`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ jobId: id }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Application failed");
+      }
+
       setApplySuccess(true);
       setAlreadyApplied(true);
     } catch (err) {
@@ -75,9 +105,29 @@ const Jobdetails = () => {
 
   const handleStatusChange = async (appId, newStatus) => {
     try {
-      await api.applications.updateStatus(appId, newStatus);
+      const token = localStorage.getItem("token");
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${BASE_URL}/applications/${appId}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update status");
+      }
+
       // Re-fetch applications
-      const allApps = await api.applications.getAll();
+      const allAppsRes = await fetch(`${BASE_URL}/applications`, { headers });
+      const allApps = await allAppsRes.json();
+      if (!allAppsRes.ok) {
+        throw new Error(allApps.message || "Failed to reload applications");
+      }
       const matchingApps = allApps.filter((app) => app.job._id === id);
       setApplicants(matchingApps);
     } catch (err) {
@@ -187,7 +237,7 @@ const Jobdetails = () => {
                           <td>
                             {app.resume ? (
                               <a
-                                href={`http://localhost:5000${app.resume}`}
+                                href={`${BACKEND_URL}${app.resume}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 style={styles.downloadLink}

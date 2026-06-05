@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { api } from "../services/api";
+import { BASE_URL } from "../services/api";
 import { Search, MapPin, DollarSign, Briefcase, Filter, RefreshCw } from "lucide-react";
 
 const Jobs = () => {
@@ -17,8 +17,16 @@ const Jobs = () => {
     setLoading(true);
     setError("");
     try {
-      // Query parameters matched with input
-      const data = await api.jobs.getAll(search, location);
+      const queryParams = new URLSearchParams();
+      if (search) queryParams.append("search", search);
+      if (location) queryParams.append("location", location);
+      const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+
+      const response = await fetch(`${BASE_URL}/jobs${query}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to load jobs");
+      }
       setJobs(data);
       setFilteredJobs(data);
     } catch (err) {

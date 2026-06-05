@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/Authcontext";
+import { BACKEND_URL } from "../services/api";
 import { User, Mail, FileUp, ShieldCheck, AlertCircle, FileCheck, CheckCircle2 } from "lucide-react";
 
 const Profile = () => {
@@ -173,7 +174,7 @@ const Profile = () => {
                   <span style={styles.resumeName}>{user.resume.split("/").pop()}</span>
                 </div>
                 <a
-                  href={`http://localhost:5000${user.resume}`}
+                  href={`${BACKEND_URL}${user.resume}`}
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-secondary"
