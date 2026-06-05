@@ -8,14 +8,11 @@ const {
   getJobById,
   updateJob,
   deleteJob,
-  tempFixDb,
 } = require("../controllers/jobController");
 
 router.post("/", auth, createJob);
 
 router.get("/", getJobs);
-
-router.get("/temp-fix-db", tempFixDb);
 
 router.get("/:id", getJobById);
 

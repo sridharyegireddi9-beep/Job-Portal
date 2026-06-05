@@ -1,4 +1,5 @@
 const Job = require("../models/Job");
+const Application = require("../models/Application");
 
 exports.createJob = async (req, res) => {
   try {
@@ -97,53 +98,6 @@ exports.deleteJob = async (req, res) => {
 
     res.json({
       message: "Job deleted successfully",
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-};
-
-const User = require("../models/User");
-exports.tempFixDb = async (req, res) => {
-  try {
-    const recruiters = await User.find({ role: "recruiter" });
-    if (recruiters.length === 0) {
-      return res.status(400).json({
-        message: "No recruiter accounts found in the database. Please register a recruiter account first!",
-      });
-    }
-
-    const { email } = req.query;
-    let recruiter;
-    if (email) {
-      recruiter = recruiters.find(r => r.email === email);
-      if (!recruiter) {
-        return res.status(400).json({
-          message: `No recruiter found with email: ${email}`,
-          availableRecruiters: recruiters.map(r => r.email),
-        });
-      }
-    } else {
-      recruiter = recruiters[0];
-    }
-
-    const result = await Job.updateMany(
-      { $or: [{ recruiter: { $exists: false } }, { recruiter: null }] },
-      { recruiter: recruiter._id }
-    );
-
-    res.json({
-      message: "Database successfully updated",
-      recruiterAssigned: {
-        id: recruiter._id,
-        name: recruiter.name,
-        email: recruiter.email,
-      },
-      matchedCount: result.matchedCount,
-      modifiedCount: result.modifiedCount,
-      availableRecruiters: recruiters.map(r => r.email),
     });
   } catch (error) {
     res.status(500).json({
