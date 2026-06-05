@@ -81,7 +81,7 @@ exports.updateApplicationStatus = async (req, res) => {
     }
 
     // Ensure the user is a recruiter of this job or an admin
-    if (role !== "admin" && application.job.recruiter.toString() !== userId) {
+    if (role !== "admin" && (!application.job.recruiter || application.job.recruiter.toString() !== userId)) {
       return res.status(403).json({ message: "Access Denied: You do not own this job listing" });
     }
 

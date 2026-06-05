@@ -34,7 +34,7 @@ const Jobdetails = () => {
       }
       
       // If user is the recruiter of this job, get the applicants
-      if (user && (user.role === "admin" || (user.role === "recruiter" && jobData.recruiter?._id === user.id))) {
+      if (user && (user.role === "admin" || (user.role === "recruiter" && (jobData.recruiter?._id || jobData.recruiter) === user._id))) {
         setLoadingApplicants(true);
         const allApps = await api.applications.getAll();
         const matchingApps = allApps.filter((app) => app.job._id === id);
@@ -153,7 +153,7 @@ const Jobdetails = () => {
           </div>
 
           {/* Applicant Portal for Recruiter */}
-          {user && (user.role === "admin" || (user.role === "recruiter" && job.recruiter?._id === user.id)) && (
+          {user && (user.role === "admin" || (user.role === "recruiter" && (job.recruiter?._id || job.recruiter) === user._id)) && (
             <div className="glass-card">
               <h2 style={{ ...styles.sectionTitle, marginBottom: "0.25rem" }}>Applicants Portal ({applicants.length})</h2>
               <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
